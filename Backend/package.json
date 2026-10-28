@@ -1,0 +1,16 @@
+{
+  "name": "ferrogest-backend",
+  "version": "1.0.0",
+  "description": "Backend del sistema FerroGest",
+  "main": "src/server.js",
+  "type": "commonjs",
+"scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+},
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "mysql2": "^3.24.6"
+  }
+}
