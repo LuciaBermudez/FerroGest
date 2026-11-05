@@ -3,9 +3,7 @@ const express = require("express");
 
 const app = express();
 
-const categoriaRoutes = require("./routes/categoria.routes");
-const productoRoutes = require("./routes/producto.routes");
-const pool = require("./config/database");
+const pool = require("./config/db.js");
 
 app.use(express.json());
 
@@ -34,7 +32,6 @@ app.get("/api/health", async (req, res) => {
     }
 });
 
-app.use("/api/categorias", categoriaRoutes);
-app.use("/api/productos", productoRoutes);
+app.use('/api/auth', require('./routes/auth.routes'));
 
 module.exports = app;
