@@ -1,40 +1,27 @@
-
-const express = require("express");
+const express = require('express');
+const cors = require('cors');
+const pool = require('./config/db');
 
 const app = express();
 
-const categoriaRoutes = require("./routes/categoria.routes");
-const productoRoutes = require("./routes/producto.routes");
-const pool = require("./config/database");
-
+app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get('/api/health', async (req, res) => {
+  try {
+    const [filas] = await pool.query('SELECT COUNT(*) AS productos FROM producto');
     res.json({
-        mensaje: "Backend de FerroGest funcionando"
+      estado: 'ok',
+      base_de_datos: 'conectada',
+      productos: filas[0].productos,
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      estado: 'error',
+      mensaje: 'No se pudo conectar a la base de datos',
+    });
+  }
 });
-
-app.get("/api/health", async (req, res) => {
-    try {
-        const [resultado] = await pool.query(
-            "SELECT DATABASE() AS base"
-        );
-
-        res.json({
-            estado: "OK",
-            backend: "FerroGest",
-            baseDatos: resultado[0].base
-        });
-    } catch (error) {
-        res.status(500).json({
-            estado: "ERROR",
-            mensaje: "No se pudo conectar con la base de datos"
-        });
-    }
-});
-
-app.use("/api/categorias", categoriaRoutes);
-app.use("/api/productos", productoRoutes);
 
 module.exports = app;
