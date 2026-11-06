@@ -54,4 +54,7 @@ app.use('/api/ventas', require('./routes/venta.routes'));
 app.use('/api/clientes', require('./routes/cliente.routes'));
 app.use('/api/usuarios', require('./routes/usuario.routes'));
 
+app.use('/api/dashboard', require('./routes/dashboard.routes'));
+app.use('/api/chat', require('./routes/chat.routes'));
+
 module.exports = app;
