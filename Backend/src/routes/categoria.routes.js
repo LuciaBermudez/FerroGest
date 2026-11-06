@@ -1,9 +1,10 @@
+const router = require('express').Router();
+const ctrl = require('../controllers/categoria.controller');
+const { verificarToken, permitirRoles } = require('../middlewares/auth.middleware');
 
-const express = require("express");
-const router = express.Router();
+router.use(verificarToken);
 
-const CategoriaController = require("../controllers/categoria.controller");
-
-router.get("/", CategoriaController.listar);
+router.get('/', ctrl.listar);
+router.post('/', permitirRoles('Administrador', 'Encargado del Inventario'), ctrl.crear);
 
 module.exports = router;

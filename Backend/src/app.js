@@ -34,7 +34,8 @@ app.get("/api/health", async (req, res) => {
     }
 });
 
-app.use("/api/categorias", categoriaRoutes);
-app.use("/api/productos", productoRoutes);
+
+app.use('/api/categorias', require('./routes/categoria.routes'));
+app.use('/api/productos', require('./routes/producto.routes'));
 
 module.exports = app;
