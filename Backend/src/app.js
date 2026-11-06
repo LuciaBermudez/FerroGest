@@ -51,4 +51,7 @@ app.use('/api/movimientos', require('./routes/movimiento.routes'));
 
 app.use('/api/ventas', require('./routes/venta.routes'));
 
+app.use('/api/clientes', require('./routes/cliente.routes'));
+app.use('/api/usuarios', require('./routes/usuario.routes'));
+
 module.exports = app;
