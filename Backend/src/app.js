@@ -49,4 +49,6 @@ app.use('/api/productos', require('./routes/producto.routes'));
 
 app.use('/api/movimientos', require('./routes/movimiento.routes'));
 
+app.use('/api/ventas', require('./routes/venta.routes'));
+
 module.exports = app;
