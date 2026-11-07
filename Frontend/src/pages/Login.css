@@ -1,0 +1,34 @@
+.login { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f0f4f9; }
+
+.login-tarjeta {
+  width: 100%; max-width: 505px; background: #fff; border-radius: 16px; padding: 48px;
+  border: 1px solid #e8edf3;
+  box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+.login-tarjeta h1 { margin: 0 0 8px; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.login-subtitulo { margin: 0 0 32px; color: var(--texto-suave); font-size: 15px; line-height: 1.5; }
+
+.campo { margin-bottom: 20px; }
+.campo-cabecera { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.campo label {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #334155;
+}
+
+.entrada { position: relative; display: flex; align-items: center; }
+.entrada > svg:first-child { position: absolute; left: 14px; color: #94a3b8; pointer-events: none; }
+.entrada input {
+  width: 100%; height: 44px; padding: 0 44px; border: 1px solid #cbd5e1; border-radius: 8px;
+  background: #f8fafc; font-size: 14px; color: var(--texto);
+}
+.entrada input:focus { outline: 2px solid var(--azul-brillante); outline-offset: 1px; background: #fff; }
+.entrada .ver { position: absolute; right: 6px; }
+
+.boton-primario {
+  width: 100%; height: 44px; border: 0; border-radius: 8px; background: var(--azul-principal);
+  color: #fff; font-weight: 600; font-size: 14px; cursor: pointer;
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+}
+.boton-primario:hover:not(:disabled) { background: #1a3278; }
+.boton-primario:disabled { opacity: 0.6; cursor: not-allowed; }
+
+@media (max-width: 520px) { .login-tarjeta { padding: 32px 24px; } }
