@@ -13,6 +13,7 @@
   --sombra: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: var(--texto);
+  --alto-encabezado: 68px;;
 }
 
 * { box-sizing: border-box; }
@@ -40,3 +41,24 @@ button, input { font: inherit; }
   padding: 6px; border-radius: 8px; display: grid; place-items: center;
 }
 .boton-icono:hover { background: var(--fondo); color: var(--texto); }
+
+.mono { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+.boton-primario {
+  width: 100%; height: 44px; border: 0; border-radius: 8px; background: var(--azul-principal);
+  color: #fff; font-weight: 600; font-size: 14px; cursor: pointer;
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+}
+.boton-primario:hover:not(:disabled) { background: #1a3278; }
+.boton-primario:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.boton-secundario {
+  height: 44px; border: 0; border-radius: 8px; background: var(--azul-claro); color: var(--azul-principal);
+  font-weight: 600; font-size: 14px; cursor: pointer; padding: 0 20px;
+}
+.boton-secundario:hover { background: #cfdcff; }
+
+.boton-suave {
+  border: 0; background: var(--azul-claro); color: var(--azul-principal); font-size: 12px; font-weight: 700;
+  border-radius: 6px; padding: 6px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
