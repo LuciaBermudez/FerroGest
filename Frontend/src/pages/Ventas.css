@@ -1,0 +1,74 @@
+/* En pantallas anchas el catálogo se hace a un lado para que el panel no lo tape */
+@media (min-width: 1280px) {
+  .ventas.con-panel { margin-right: 380px; }
+}
+
+.boton-registrar {
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 12px 20px;
+  border: 0; border-radius: 8px; background: var(--azul-principal); color: #fff;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.boton-registrar:hover { background: #1a3278; }
+.insignia { padding: 1px 8px; border-radius: 999px; background: #fff; color: var(--azul-principal); font-size: 12px; font-weight: 700; }
+
+.ventas-filtros {
+  display: grid; gap: 12px; margin-bottom: 16px; padding: 12px;
+  background: #fff; border: 1px solid var(--borde); border-radius: var(--radio);
+}
+.busqueda { position: relative; display: flex; align-items: center; }
+.busqueda svg { position: absolute; left: 14px; color: var(--texto-suave); }
+.busqueda input {
+  width: 100%; height: 44px; padding: 0 14px 0 44px; border: 0; border-radius: 8px;
+  background: #eef3fb; font-size: 14px;
+}
+.busqueda input:focus { outline: 2px solid var(--azul-brillante); background: #fff; }
+.categorias { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.categorias button {
+  flex: none; padding: 7px 14px; border: 0; border-radius: 6px; white-space: nowrap; cursor: pointer;
+  background: var(--azul-claro); color: var(--azul-principal); font-size: 13px; font-weight: 600;
+}
+.categorias button.activo { background: var(--azul-principal); color: #fff; }
+
+.catalogo { background: #fff; border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; }
+.catalogo-titulo {
+  display: flex; align-items: center; gap: 8px; margin: 0; padding: 14px 16px; background: #eef3fb;
+  font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--azul-principal);
+}
+.tabla-envoltorio { overflow-x: auto; transition: opacity 0.15s; }
+.tabla-envoltorio.actualizando { opacity: 0.6; }
+.tabla-catalogo { width: 100%; min-width: 760px; border-collapse: collapse; }
+.tabla-catalogo th {
+  padding: 12px 16px; background: #f8fafc; text-align: left; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-suave);
+}
+.tabla-catalogo td { padding: 14px 16px; border-top: 1px solid var(--borde); vertical-align: middle; }
+.derecha { text-align: right !important; }
+
+.celda-sku { font-size: 12px; font-weight: 700; color: var(--azul-brillante); white-space: nowrap; }
+.prod-nombre { font-weight: 700; }
+.prod-desc { margin-top: 2px; font-size: 13px; color: var(--texto-suave); }
+.etiqueta {
+  display: inline-block; padding: 3px 8px; border-radius: 4px; background: var(--azul-claro);
+  color: var(--azul-principal); font-size: 11px; font-weight: 600;
+}
+.stock { font-size: 13px; font-weight: 600; }
+.stock.agotado { color: var(--rojo); }
+.ubicacion { margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--azul-brillante); }
+.celda-precio { font-size: 14px; font-weight: 700; white-space: nowrap; }
+.fila-agotada .prod-nombre, .fila-agotada .celda-precio { opacity: 0.55; }
+
+.boton-agregar {
+  display: inline-flex; align-items: center; gap: 4px; padding: 7px 12px; border: 0; border-radius: 6px;
+  background: var(--azul-brillante); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.boton-agregar:hover:not(:disabled) { background: #1e40af; }
+.boton-agregar:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+.vacio { padding: 40px 16px; text-align: center; color: var(--texto-suave); }
+.catalogo-pie {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  padding: 12px 16px; border-top: 1px solid var(--borde); font-size: 13px; color: var(--texto-suave);
+}
+.paginacion { display: flex; gap: 8px; }
+.paginacion button { padding: 6px 12px; border: 1px solid var(--borde); border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; }
+.paginacion button:disabled { opacity: 0.5; cursor: not-allowed; }
