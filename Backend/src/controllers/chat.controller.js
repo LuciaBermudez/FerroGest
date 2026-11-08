@@ -46,12 +46,12 @@ async function conversar(req, res) {
   }
 
   try {
-    const respuesta = await responder({
+    const { texto, tarjetas } = await responder({
       historial: limpiarHistorial(req.body.historial),
       mensaje,
       usuario: req.usuario,
     });
-    res.json({ respuesta });
+    res.json({ respuesta: texto, tarjetas });
   } catch (error) {
     if (error instanceof ErrorNegocio) {
       return res.status(error.estado).json({ mensaje: error.message });
