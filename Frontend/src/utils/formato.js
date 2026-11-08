@@ -21,3 +21,19 @@ export function fechaLarga(fecha = new Date()) {
 
 export const nombreMes = (fecha = new Date()) =>
   new Intl.DateTimeFormat('es-CO', { month: 'long' }).format(fecha);
+
+// "24 May 2024"
+export function formatoFecha(valor) {
+  const partes = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+    .formatToParts(new Date(valor));
+  const parte = (tipo) => partes.find((p) => p.type === tipo)?.value ?? '';
+  const mes = parte('month').replace('.', '');
+  return `${parte('day')} ${mes.charAt(0).toUpperCase()}${mes.slice(1)} ${parte('year')}`;
+}
+
+// "15:42:10"
+export const formatoHora = (valor) =>
+  new Intl.DateTimeFormat('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+    .format(new Date(valor));
+
+export const etiquetaDocumento = (tipo) => (tipo === 'CC' ? 'C.C.' : tipo);

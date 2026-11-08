@@ -220,7 +220,7 @@ async function listar(req, res) {
     const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM venta v ${where}`, params);
     const [filas] = await pool.query(
       `SELECT v.id_venta, v.numero, v.fecha_hora, v.medio_pago, v.total, v.estado,
-              c.nombre_razon_social AS cliente, c.documento,
+              c.nombre_razon_social AS cliente, c.tipo_documento, c.documento,
               u.nombre_completo AS vendedor
        FROM venta v
        JOIN cliente c ON c.id_cliente = v.id_cliente
@@ -247,13 +247,15 @@ async function listar(req, res) {
 async function obtener(req, res) {
   try {
     const [ventas] = await pool.query(
-      `SELECT v.id_venta, v.id_usuario, v.numero, v.fecha_hora, v.medio_pago, v.subtotal,
+            `SELECT v.id_venta, v.id_usuario, v.numero, v.fecha_hora, v.medio_pago, v.subtotal,
               v.porcentaje_descuento, v.iva_total, v.total, v.estado, v.motivo_anulacion,
               v.fecha_anulacion, c.nombre_razon_social AS cliente, c.tipo_documento, c.documento,
-              u.nombre_completo AS vendedor, ua.nombre_completo AS anulada_por
+              c.direccion AS direccion_cliente,
+              u.nombre_completo AS vendedor, r.nombre AS rol_vendedor, ua.nombre_completo AS anulada_por
        FROM venta v
        JOIN cliente c ON c.id_cliente = v.id_cliente
        JOIN usuario u ON u.id_usuario = v.id_usuario
+       JOIN rol r ON r.id_rol = u.id_rol
        LEFT JOIN usuario ua ON ua.id_usuario = v.id_usuario_anulacion
        WHERE v.id_venta = ?`,
       [req.params.id]
