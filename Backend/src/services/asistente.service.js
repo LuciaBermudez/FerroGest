@@ -2,19 +2,21 @@ const pool = require('../config/db');
 const { ErrorNegocio } = require('./inventario.service');
 const { PERIODOS, resumenPeriodo } = require('./reportes.service');
 
-// El SDK puede exportar la clase directamente o como "default" según cómo se cargue
-const AnthropicModulo = require('@anthropic-ai/sdk');
-const Anthropic = AnthropicModulo.default || AnthropicModulo;
+// El SDK puede exportar la clase de distintas formas según cómo se cargue
+const OpenAIModulo = require('openai');
+const OpenAI = OpenAIModulo.OpenAI || OpenAIModulo.default || OpenAIModulo;
 
-const MODELO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
+const MODELO = process.env.OPENAI_MODEL || 'gpt-5.6-terra';
+// "low" mantiene las respuestas rápidas y baratas. Con un modelo sin razonamiento, deja la variable vacía
+const ESFUERZO = process.env.OPENAI_REASONING_EFFORT ?? 'low';
 const MAX_VUELTAS = 5; // tope de rondas de herramientas por pregunta
 
 let cliente = null;
 function obtenerCliente() {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     throw new ErrorNegocio('El asistente no está configurado', 503);
   }
-  if (!cliente) cliente = new Anthropic(); // lee ANTHROPIC_API_KEY del entorno
+  if (!cliente) cliente = new OpenAI(); // lee OPENAI_API_KEY del entorno
   return cliente;
 }
 
@@ -22,14 +24,17 @@ function obtenerCliente() {
 // Herramientas: la IA solo puede pedir estas consultas, todas de lectura
 // ---------------------------------------------------------------------
 
+// strict: false porque "solo_agotados" es opcional (el modo estricto exige que todos los campos sean obligatorios)
 const HERRAMIENTAS = [
   {
+    type: 'function',
     name: 'buscar_productos',
     description:
       'Busca productos del inventario por código (SKU o código de barras) o por nombre. ' +
       'Devuelve existencias, stock mínimo, precio de venta sin IVA y porcentaje de IVA. ' +
       'Úsala para preguntas sobre cuánto stock hay de un producto o cuánto cuesta.',
-    input_schema: {
+    strict: false,
+    parameters: {
       type: 'object',
       properties: {
         texto: {
@@ -41,11 +46,13 @@ const HERRAMIENTAS = [
     },
   },
   {
+    type: 'function',
     name: 'productos_stock_bajo',
     description:
       'Lista los productos activos con stock bajo o agotado (existencias iguales o inferiores al mínimo). ' +
       'Úsala para preguntas como qué productos hay que reponer o qué está agotado.',
-    input_schema: {
+    strict: false,
+    parameters: {
       type: 'object',
       properties: {
         solo_agotados: {
@@ -56,11 +63,13 @@ const HERRAMIENTAS = [
     },
   },
   {
+    type: 'function',
     name: 'resumen_ventas',
     description:
       'Resumen de ventas de un periodo: número de ventas, total vendido, ticket promedio y ventas anuladas. ' +
       'Úsala para preguntas sobre cuánto se ha vendido.',
-    input_schema: {
+    strict: false,
+    parameters: {
       type: 'object',
       properties: {
         periodo: { type: 'string', enum: PERIODOS, description: 'hoy, semana (desde el lunes) o mes' },
@@ -168,56 +177,84 @@ Responde siempre en español, de forma breve y clara.
 El usuario actual tiene el rol: ${usuario.rol}.`;
 }
 
-async function responder({ historial, mensaje, usuario }) {
+function extraerTexto(respuesta) {
+  if (typeof respuesta.output_text === 'string') return respuesta.output_text.trim();
+  return respuesta.output
+    .filter((item) => item.type === 'message')
+    .flatMap((item) => item.content)
+    .filter((parte) => parte.type === 'output_text')
+    .map((parte) => parte.text)
+    .join('\n')
+    .trim();
+}
+
+async function conversar({ historial, mensaje, usuario }) {
   const api = obtenerCliente();
-  const mensajes = [...historial, { role: 'user', content: mensaje }];
+  const entrada = [...historial, { role: 'user', content: mensaje }];
   const tools = herramientasPara(usuario.rol);
-  const system = promptSistema(usuario);
+  const instructions = promptSistema(usuario);
   const tarjetas = []; // resultados de las herramientas: la interfaz los muestra como tarjetas
 
   const llamar = () =>
-    api.messages.create({ model: MODELO, max_tokens: 1024, system, tools, messages: mensajes });
+    api.responses.create({
+      model: MODELO,
+      instructions,
+      input: entrada,
+      tools,
+      max_output_tokens: 2000,
+      ...(ESFUERZO ? { reasoning: { effort: ESFUERZO } } : {}),
+    });
+
+  const funcionesPedidas = (respuesta) => respuesta.output.filter((item) => item.type === 'function_call');
 
   let respuesta = await llamar();
   let vueltas = 0;
 
-  // Mientras Claude pida herramientas: se ejecutan y se le devuelven los resultados
-  while (respuesta.stop_reason === 'tool_use' && vueltas < MAX_VUELTAS) {
+  // Mientras el modelo pida funciones: se ejecutan y se le devuelven los resultados
+  while (funcionesPedidas(respuesta).length > 0 && vueltas < MAX_VUELTAS) {
     vueltas++;
-    mensajes.push({ role: 'assistant', content: respuesta.content });
+    entrada.push(...respuesta.output); // se le devuelve todo lo que produjo, en el mismo orden
 
-    const resultados = [];
-    for (const bloque of respuesta.content) {
-      if (bloque.type !== 'tool_use') continue;
+    for (const llamada of funcionesPedidas(respuesta)) {
+      let resultado;
       try {
-        const datos = await ejecutarHerramienta(bloque.name, bloque.input, usuario);
-        tarjetas.push({ herramienta: bloque.name, datos });
-        resultados.push({ type: 'tool_result', tool_use_id: bloque.id, content: JSON.stringify(datos) });
+        const argumentos = llamada.arguments ? JSON.parse(llamada.arguments) : {};
+        const datos = await ejecutarHerramienta(llamada.name, argumentos, usuario);
+        tarjetas.push({ herramienta: llamada.name, datos });
+        resultado = JSON.stringify(datos);
       } catch (error) {
-        // Se le avisa a Claude del error para que se lo explique al usuario
-        resultados.push({
-          type: 'tool_result',
-          tool_use_id: bloque.id,
-          content: error.message,
-          is_error: true,
-        });
+        // Se le avisa al modelo del error para que se lo explique al usuario
+        resultado = JSON.stringify({ error: error.message });
       }
+      entrada.push({ type: 'function_call_output', call_id: llamada.call_id, output: resultado });
     }
 
-    mensajes.push({ role: 'user', content: resultados });
     respuesta = await llamar();
   }
 
-  const texto = respuesta.content
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n')
-    .trim();
-
   return {
-    texto: texto || 'No pude completar la consulta. Intenta reformular la pregunta.',
+    texto: extraerTexto(respuesta) || 'No pude completar la consulta. Intenta reformular la pregunta.',
     tarjetas,
   };
+}
+
+// Convierte los errores típicos de OpenAI en mensajes claros
+function traducirError(error) {
+  if (error instanceof ErrorNegocio) return error;
+  console.error(error);
+
+  if (error?.status === 401) return new ErrorNegocio('La clave de OpenAI no es válida', 503);
+  if (error?.code === 'insufficient_quota') return new ErrorNegocio('La cuenta de OpenAI no tiene saldo disponible', 503);
+  if (error?.status === 404) return new ErrorNegocio(`El modelo "${MODELO}" no está disponible para esta cuenta`, 503);
+  return error;
+}
+
+async function responder(datos) {
+  try {
+    return await conversar(datos);
+  } catch (error) {
+    throw traducirError(error);
+  }
 }
 
 module.exports = { responder };
