@@ -31,3 +31,12 @@ export const MENU = [
     items: [{ ruta: '/usuarios', texto: 'Usuarios', icono: Settings, roles: [ROLES.ADMIN] }],
   },
 ];
+
+export const DESCRIPCION_ROL = {
+  [ROLES.VENDEDOR]: 'Cobro rápido, arqueo y tickets de venta.',
+  [ROLES.ADMIN]: 'Gestión total, anulación de cobros y stock.',
+  [ROLES.ENCARGADO]: 'Gestión del inventario; puede agregar productos.',
+};
+
+// Orden en que se muestran las tarjetas de rol, como en el mockup
+export const ORDEN_ROLES = [ROLES.VENDEDOR, ROLES.ADMIN, ROLES.ENCARGADO];

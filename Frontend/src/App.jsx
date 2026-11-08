@@ -5,11 +5,11 @@ import RutaProtegida from './components/RutaProtegida';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Pendiente from './pages/Pendiente';
 import Ventas from './pages/Ventas';
 import Inventario from './pages/Inventario';
 import HistorialVentas from './pages/HistorialVentas';
 import Clientes from './pages/Clientes';
+import Usuarios from './pages/Usuarios';
 
 
 // Cualquier ruta desconocida lleva al inicio del rol, o al login si no hay sesión
@@ -28,7 +28,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route element={<RutaProtegida roles={[ROLES.ADMIN]} />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/usuarios" element={<Pendiente titulo="Usuarios" />} />
+            <Route path="/usuarios" element={<Usuarios />} />
           </Route>
 
           <Route element={<RutaProtegida roles={[ROLES.ADMIN, ROLES.VENDEDOR]} />}>
