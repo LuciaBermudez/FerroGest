@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation  } from 'react-router-dom';
 import { LogOut, Store, User, Wrench } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { MENU } from '../utils/roles';
@@ -6,6 +6,8 @@ import './Layout.css';
 
 export default function Layout() {
   const { usuario, cerrarSesion } = useAuth();
+  const { pathname } = useLocation();
+  const TITULOS = { '/inventario': 'Panel de Productos' };
 
   return (
     <div className="app">
@@ -41,7 +43,7 @@ export default function Layout() {
             <Store size={16} />
             <span>Ferretería Central</span>
             <span>›</span>
-            <strong>Panel de Operaciones</strong>
+            <strong>{TITULOS[pathname] ?? 'Panel de Operaciones'}</strong>
           </div>
 
           <div className="usuario">

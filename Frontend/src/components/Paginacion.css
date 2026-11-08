@@ -1,0 +1,9 @@
+.paginacion-num { display: flex; align-items: center; gap: 4px; }
+.paginacion-num button {
+  min-width: 28px; height: 28px; padding: 0 6px; border: 0; border-radius: 4px; background: transparent;
+  color: #334155; font-size: 13px; cursor: pointer; display: grid; place-items: center;
+}
+.paginacion-num button:hover:not(:disabled):not(.activo) { background: var(--azul-claro); }
+.paginacion-num button.activo { background: var(--azul-principal); color: #fff; font-weight: 700; }
+.paginacion-num button:disabled { opacity: 0.4; cursor: not-allowed; }
+.paginacion-num .puntos { padding: 0 4px; color: var(--texto-suave); }

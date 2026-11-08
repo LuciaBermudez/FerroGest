@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Pendiente from './pages/Pendiente';
 import Ventas from './pages/Ventas';
+import Inventario from './pages/Inventario';
 
 // Cualquier ruta desconocida lleva al inicio del rol, o al login si no hay sesión
 function Inicio() {
@@ -34,7 +35,7 @@ export default function App() {
           </Route>
 
           <Route element={<RutaProtegida roles={[ROLES.ADMIN, ROLES.ENCARGADO]} />}>
-            <Route path="/inventario" element={<Pendiente titulo="Inventario" />} />
+            <Route path="/inventario" element={<Inventario />} />
           </Route>
         </Route>
       </Route>

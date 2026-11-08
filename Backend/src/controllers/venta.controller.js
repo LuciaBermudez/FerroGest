@@ -116,7 +116,7 @@ async function crear(req, res) {
       const ivaTotal = redondear(iva);
       const total = redondear(subtotal - valorDescuento + ivaTotal);
 
-      if (medio_pago === 'efectivo' && montoRecibido !== null && montoRecibido < total) {
+      if (montoRecibido !== null && montoRecibido < total) {
         throw new ErrorNegocio('El monto recibido es menor al total de la venta', 400);
       }
 
@@ -160,7 +160,7 @@ async function crear(req, res) {
         iva_total: ivaTotal,
         total,
         cambio:
-          medio_pago === 'efectivo' && montoRecibido !== null ? redondear(montoRecibido - total) : null,
+          montoRecibido !== null ? redondear(montoRecibido - total) : null,
       };
     });
 
