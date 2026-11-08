@@ -57,3 +57,7 @@ export function iniciales(nombre = '') {
     .map((palabra) => palabra.charAt(0).toUpperCase())
     .join('');
 }
+
+// "10:42 a. m."
+export const formatoHoraCorta = (valor) =>
+  new Intl.DateTimeFormat('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date(valor));

@@ -3,6 +3,7 @@ import { LogOut, Store, User, Wrench } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { MENU } from '../utils/roles';
 import './Layout.css';
+import AsistenteChat from './AsistenteChat';
 
 export default function Layout() {
   const { usuario, cerrarSesion } = useAuth();
@@ -62,6 +63,7 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      {pathname === '/dashboard' && <AsistenteChat />}
     </div>
   );
 }
