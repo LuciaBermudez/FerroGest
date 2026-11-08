@@ -7,6 +7,7 @@ import { PAGOS } from '../utils/pagos';
 import {
   etiquetaDocumento, formatoFecha, formatoHora, formatoNumero, formatoPesos,
 } from '../utils/formato';
+import { useSearchParams } from 'react-router-dom';
 import Paginacion from '../components/Paginacion';
 import DetalleVenta from '../components/DetalleVenta';
 import AnularModal from '../components/AnularModal';
@@ -33,6 +34,9 @@ export default function HistorialVentas() {
 
   const peticion = useRef(0);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const clienteFiltro = searchParams.get('cliente') ?? '';
+
   // El número de ticket se aplica 400 ms después de escribir
   useEffect(() => {
     const espera = setTimeout(() => {
@@ -54,6 +58,7 @@ export default function HistorialVentas() {
 
     const params = new URLSearchParams({ pagina, limite: LIMITE });
     if (numeroAplicado) params.set('numero', numeroAplicado);
+    if (clienteFiltro) params.set('cliente', clienteFiltro);
     if (filtros.estado) params.set('estado', filtros.estado);
     if (filtros.medio_pago) params.set('medio_pago', filtros.medio_pago);
     if (filtros.desde) params.set('desde', filtros.desde);
@@ -69,7 +74,7 @@ export default function HistorialVentas() {
     } finally {
       if (id === peticion.current) setCargando(false);
     }
-  }, [pagina, numeroAplicado, filtros.estado, filtros.medio_pago, filtros.desde, filtros.hasta]);
+  }, [pagina, numeroAplicado, filtros.estado, filtros.medio_pago, filtros.desde, filtros.hasta, clienteFiltro]);
 
   useEffect(() => {
     cargarLista();
@@ -87,6 +92,7 @@ export default function HistorialVentas() {
     setFiltros(FILTROS_VACIOS);
     setNumeroAplicado('');
     setPagina(1);
+    setSearchParams({});
   }
 
   function alAnular(texto) {
@@ -100,7 +106,7 @@ export default function HistorialVentas() {
   const totalPaginas = Math.max(1, Math.ceil(total / LIMITE));
   const inicio = total === 0 ? 0 : (pagina - 1) * LIMITE + 1;
   const fin = Math.min(pagina * LIMITE, total);
-  const hayFiltros = Object.values(filtros).some(Boolean);
+  const hayFiltros = Object.values(filtros).some(Boolean) || Boolean(clienteFiltro);
 
   return (
     <div className={`hv ${seleccionada ? 'con-detalle' : ''}`}>
@@ -111,6 +117,13 @@ export default function HistorialVentas() {
       {error && (
         <div className="alerta-error" role="alert">
           {error} <button className="enlace" onClick={cargarLista}>Reintentar</button>
+        </div>
+      )}
+
+      {clienteFiltro && (
+        <div className="alerta-info">
+          Mostrando solo las ventas de <strong>{ventas[0]?.cliente ?? `el cliente #${clienteFiltro}`}</strong>.{' '}
+          <button className="enlace" onClick={() => { setSearchParams({}); setPagina(1); }}>Quitar filtro</button>
         </div>
       )}
 

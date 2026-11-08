@@ -37,3 +37,23 @@ export const formatoHora = (valor) =>
     .format(new Date(valor));
 
 export const etiquetaDocumento = (tipo) => (tipo === 'CC' ? 'C.C.' : tipo);
+
+// 1020458912 → 1.020.458.912 y 900548120-3 → 900.548.120-3 (solo para CC y NIT numéricos)
+export function formatoDocumento(tipo, documento) {
+  if ((tipo === 'CC' || tipo === 'NIT') && /^\d+(-\d)?$/.test(documento)) {
+    const [numero, digito] = documento.split('-');
+    const conPuntos = numero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return digito !== undefined ? `${conPuntos}-${digito}` : conPuntos;
+  }
+  return documento;
+}
+
+// "Constructora Andina S.A.S." → "CA"
+export function iniciales(nombre = '') {
+  return nombre
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((palabra) => palabra.charAt(0).toUpperCase())
+    .join('');
+}
