@@ -28,6 +28,11 @@ function validar(d) {
   if (d.stock_minimo !== undefined && !(Number(d.stock_minimo) >= 0)) {
     errores.push('El stock mínimo debe ser mayor o igual a 0');
   }
+  if (d.codigo && d.codigo.trim().length > 30) errores.push('El código no puede superar los 30 caracteres');
+  if (d.nombre && d.nombre.trim().length > 100) errores.push('El nombre no puede superar los 100 caracteres');
+  if (d.descripcion && d.descripcion.trim().length > 255) errores.push('La descripción no puede superar los 255 caracteres');
+  if (d.unidad_medida && d.unidad_medida.trim().length > 20) errores.push('La unidad de medida no puede superar los 20 caracteres');
+  
   return errores;
 }
 
