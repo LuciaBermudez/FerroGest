@@ -1,0 +1,47 @@
+.cl-detalle {
+  display: grid; gap: 16px; margin-top: 20px; padding: 20px; background: #fff;
+  border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: var(--sombra);
+  scroll-margin-top: calc(var(--alto-encabezado) + 12px);
+}
+.cl-detalle-cabecera { display: flex; align-items: center; gap: 14px; }
+.cl-avatar {
+  flex: none; width: 44px; height: 44px; border-radius: 8px; background: var(--azul-oscuro);
+  color: #fff; display: grid; place-items: center; font-weight: 700;
+}
+.cl-detalle-titulo { flex: 1; min-width: 0; }
+.cl-detalle-titulo h2 { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0; font-size: 20px; }
+.cl-detalle-titulo .mono { font-size: 12px; color: var(--texto-suave); }
+
+.cl-contacto {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; padding: 16px;
+  background: #f1f5fb; border-radius: 10px; font-size: 14px;
+}
+.cl-contacto .ancho { grid-column: 1 / -1; }
+.cl-contacto small {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; color: var(--azul-principal);
+}
+@media (max-width: 640px) { .cl-contacto { grid-template-columns: 1fr; } }
+
+.cl-total { padding: 18px 20px; border-radius: 10px; background: var(--azul-oscuro); color: #fff; }
+.cl-total small { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; }
+.cl-total strong { font-size: 32px; font-weight: 800; }
+.cl-total span { margin-left: 12px; font-size: 13px; opacity: 0.8; }
+
+.cl-historial-cab { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cl-historial-cab h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 18px; }
+.cl-ver-todas { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+
+.cl-compras-envoltorio { overflow-x: auto; }
+.cl-compras { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px; }
+.cl-compras th {
+  padding: 10px; background: #f1f5fb; text-align: left; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; color: #334155;
+}
+.cl-compras td { padding: 10px; border-bottom: 1px solid var(--borde); }
+.cl-compras .der { text-align: right; }
+.cl-ticket { font-size: 12px; font-weight: 700; color: var(--azul-principal); white-space: nowrap; }
+.cl-pago { display: inline-flex; align-items: center; gap: 6px; }
+.cl-pill { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.cl-pill.activa { background: var(--azul-claro); color: var(--azul-principal); }
+.cl-pill.anulada { background: var(--rojo-claro); color: var(--rojo); }

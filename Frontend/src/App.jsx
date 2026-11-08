@@ -9,6 +9,8 @@ import Pendiente from './pages/Pendiente';
 import Ventas from './pages/Ventas';
 import Inventario from './pages/Inventario';
 import HistorialVentas from './pages/HistorialVentas';
+import Clientes from './pages/Clientes';
+
 
 // Cualquier ruta desconocida lleva al inicio del rol, o al login si no hay sesión
 function Inicio() {
@@ -31,7 +33,7 @@ export default function App() {
 
           <Route element={<RutaProtegida roles={[ROLES.ADMIN, ROLES.VENDEDOR]} />}>
             <Route path="/ventas" element={<Ventas />} />
-            <Route path="/clientes" element={<Pendiente titulo="Clientes" />} />
+            <Route path="/clientes" element={<Clientes />} />
             <Route path="/historial-ventas" element={<HistorialVentas />} />
           </Route>
 

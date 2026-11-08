@@ -1,0 +1,8 @@
+.campo-icono { position: relative; }
+.campo-icono > svg {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--texto-suave); pointer-events: none;
+}
+.modal .campo-icono input { padding-left: 38px; }
+.etiqueta-fila { display: flex; justify-content: space-between; gap: 8px; }
+.opcional { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--texto-suave); }
