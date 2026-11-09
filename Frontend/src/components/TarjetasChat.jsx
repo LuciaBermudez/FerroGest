@@ -70,7 +70,87 @@ const TARJETAS = {
   productos_stock_bajo: StockBajo,
   buscar_productos: Productos,
   resumen_ventas: Ventas,
+  productos_mas_vendidos: MasVendidos,
+  historial_cliente: HistorialCliente,
+  ventas_por_vendedor: VentasVendedor,
 };
+
+const CRITERIOS = { cantidad: 'por unidades', valor: 'por valor vendido' };
+
+function MasVendidos({ datos }) {
+  if (datos.productos.length === 0) {
+    return <div className="chat-tarjeta"><div className="chat-mas">No hay ventas en este periodo.</div></div>;
+  }
+  return (
+    <div className="chat-tarjeta">
+      <div className="chat-titulo">
+        Más vendidos · {PERIODOS[datos.periodo] ?? datos.periodo} · {CRITERIOS[datos.criterio]}
+      </div>
+      {datos.productos.map((p, i) => (
+        <div className="chat-item" key={p.id_producto}>
+          <div className="chat-item-cab"><strong>{i + 1}. {p.nombre}</strong></div>
+          <div className="chat-item-det mono">
+            <span>{formatoCantidad(p.unidades)} {p.unidad_medida}</span>
+            <span>{formatoPesos(p.total)}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HistorialCliente({ datos }) {
+  if (datos.clientes.length === 0) {
+    return <div className="chat-tarjeta"><div className="chat-mas">No encontré clientes con ese dato.</div></div>;
+  }
+  return (
+    <div className="chat-tarjeta">
+      {datos.clientes.map((c) => (
+        <div className="chat-item" key={c.documento}>
+          <div className="chat-item-cab">
+            <strong>{c.nombre}</strong>
+            <span className="chat-etiqueta normal">{c.tipo}</span>
+          </div>
+          <div className="chat-item-det mono"><span>{c.documento}</span></div>
+          <div className="chat-stats">
+            <div className="chat-stat"><small>Total comprado</small><b className="mono">{formatoPesos(c.total_comprado)}</b></div>
+            <div className="chat-stat"><small>Compras</small><b className="mono">{formatoNumero(c.num_compras)}</b></div>
+          </div>
+          {c.ultimas_compras.map((v) => (
+            <div className="chat-item-det mono chat-compra" key={v.ticket}>
+              <span>{v.ticket} · {v.fecha}</span>
+              <span className={v.estado === 'anulada' ? 'tachado' : ''}>{formatoPesos(v.total)}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+      {datos.hay_mas && <div className="chat-mas">Hay más coincidencias: indica el documento para precisar.</div>}
+    </div>
+  );
+}
+
+function VentasVendedor({ datos }) {
+  if (datos.vendedores.length === 0) {
+    return <div className="chat-tarjeta"><div className="chat-mas">No hay ventas en este periodo.</div></div>;
+  }
+  return (
+    <div className="chat-tarjeta">
+      <div className="chat-titulo">Ventas por vendedor · {PERIODOS[datos.periodo] ?? datos.periodo}</div>
+      {datos.vendedores.map((v, i) => (
+        <div className="chat-item" key={v.id_usuario}>
+          <div className="chat-item-cab">
+            <strong>{i + 1}. {v.vendedor}</strong>
+            <b className="mono">{formatoPesos(v.total_vendido)}</b>
+          </div>
+          <div className="chat-item-det mono">
+            <span>{formatoNumero(v.num_ventas)} ventas · promedio {formatoPesos(v.ticket_promedio)}</span>
+            {v.anuladas > 0 && <span>{v.anuladas} anuladas</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function TarjetasChat({ tarjetas = [] }) {
   return tarjetas.map((t, i) => {

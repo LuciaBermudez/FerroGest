@@ -80,9 +80,10 @@ async function mediosDePago(periodo, idUsuario) {
   };
 }
 
-// Top 5 por valor vendido (con descuento e IVA, igual que el total de la venta)
-async function topProductos(periodo, idUsuario) {
+// Top 5 por valor vendido (con descuento e IVA, igual que el total de la venta) o por unidades vendidas
+async function topProductos(periodo, idUsuario, orden = 'valor') {
   const f = soloDe(idUsuario);
+  const criterio = orden === 'cantidad' ? 'unidades' : 'total'; // fragmentos fijos de SQL
   const [filas] = await pool.query(
     `SELECT p.id_producto, p.codigo, p.nombre, p.unidad_medida,
             SUM(d.cantidad) AS unidades,
@@ -93,7 +94,7 @@ async function topProductos(periodo, idUsuario) {
      JOIN producto p ON p.id_producto = d.id_producto
      WHERE v.estado = 'activa' AND v.fecha_hora >= ${desde(periodo)}${f.sql}
      GROUP BY p.id_producto, p.codigo, p.nombre, p.unidad_medida
-     ORDER BY total DESC
+     ORDER BY ${criterio} DESC
      LIMIT 5`,
     f.params
   );
@@ -101,6 +102,25 @@ async function topProductos(periodo, idUsuario) {
     total_generado: redondear(filas.reduce((acc, fila) => acc + fila.total, 0)),
     productos: filas,
   };
+}
+
+// Ventas de cada vendedor en el periodo, de mayor a menor
+async function ventasPorVendedor(periodo) {
+  const [filas] = await pool.query(
+    `SELECT u.id_usuario, u.nombre_completo AS vendedor,
+            COUNT(CASE WHEN v.estado = 'activa' THEN 1 END) AS num_ventas,
+            COALESCE(SUM(CASE WHEN v.estado = 'activa' THEN v.total END), 0) AS total_vendido,
+            COUNT(CASE WHEN v.estado = 'anulada' THEN 1 END) AS anuladas
+     FROM venta v
+     JOIN usuario u ON u.id_usuario = v.id_usuario
+     WHERE v.fecha_hora >= ${desde(periodo)}
+     GROUP BY u.id_usuario, u.nombre_completo
+     ORDER BY total_vendido DESC, u.nombre_completo`
+  );
+  return filas.map((f) => ({
+    ...f,
+    ticket_promedio: f.num_ventas > 0 ? redondear(f.total_vendido / f.num_ventas) : 0,
+  }));
 }
 
 // Estado del stock: solo cuenta productos activos para "bajo" y "agotado"
@@ -170,6 +190,7 @@ module.exports = {
   resumenPeriodo,
   mediosDePago,
   topProductos,
+  ventasPorVendedor,
   resumenStock,
   productosCriticos,
   entradasPeriodo,

@@ -79,6 +79,22 @@ async function buscarGenerico(conexion) {
   return filas[0];
 }
 
+// Búsqueda por nombre o documento para el asistente de IA
+async function buscarPorTexto(texto, limite = 4) {
+  const patronNombre = `%${texto}%`;
+  const patronDocumento = `%${texto.replace(/[.\s]/g, '')}%`; // los documentos se guardan sin puntos ni espacios
+  const [filas] = await bd().query(
+    `SELECT id_cliente, tipo, tipo_documento, nombre_razon_social, documento
+     FROM cliente
+     WHERE nombre_razon_social LIKE ? OR documento LIKE ?
+     ORDER BY nombre_razon_social
+     LIMIT ?`,
+    [patronNombre, patronDocumento, limite]
+  );
+  return filas;
+}
+
 module.exports = {
-  DOCUMENTO_GENERICO, listar, obtener, documentoDe, crear, actualizar, cambiarEstado, estadoPorId, buscarGenerico,
+  DOCUMENTO_GENERICO, listar, obtener, documentoDe, crear, actualizar, cambiarEstado,
+  estadoPorId, buscarGenerico, buscarPorTexto,
 };

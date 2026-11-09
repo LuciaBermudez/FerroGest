@@ -90,3 +90,8 @@
   color: #fff; cursor: pointer; display: grid; place-items: center;
 }
 .chat-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.chat-titulo { padding: 2px 4px; font-size: 12px; font-weight: 700; color: var(--azul-principal); }
+.chat-item .chat-stats { margin-top: 8px; }
+.chat-compra { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--borde); }
+.chat-compra .tachado { color: var(--rojo); text-decoration: line-through; }

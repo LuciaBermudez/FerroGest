@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bot, CircleX, Send, Trash2, TrendingUp, User, Warehouse, X } from 'lucide-react';
+import { Bot, CircleX, Send, Trash2, TrendingUp, User, Warehouse, X, Trophy, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../hooks/useChat';
 import { ROLES } from '../utils/roles';
@@ -9,6 +9,8 @@ import './AsistenteChat.css';
 
 const PREGUNTAS_RAPIDAS = [
   { etiqueta: '¿Ventas de hoy?', mensaje: '¿Cuánto hemos vendido hoy?', icono: TrendingUp, soloAdmin: true },
+  { etiqueta: '¿Más vendidos?', mensaje: '¿Cuáles son los productos más vendidos este mes?', icono: Trophy, soloAdmin: true },
+  { etiqueta: '¿Ventas por vendedor?', mensaje: '¿Cuánto ha vendido cada vendedor este mes?', icono: Users, soloAdmin: true },
   { etiqueta: '¿Productos agotados?', mensaje: '¿Qué productos están agotados?', icono: CircleX },
   { etiqueta: '¿Stock por reponer?', mensaje: '¿Qué productos hay que reponer?', icono: Warehouse },
 ];
@@ -79,7 +81,8 @@ export default function AsistenteChat() {
             <span className="chat-avatar bot"><Bot size={16} /></span>
             <div className="chat-contenido">
               <div className="chat-burbuja">
-                Hola, soy el asistente de FerroGest. Puedo consultar existencias, precios{esAdmin ? ' y ventas' : ''}.
+                Hola, soy el asistente de FerroGest. Puedo consultar existencias y precios
+                {esAdmin ? ', ventas, productos más vendidos y compras de clientes' : ''}.
                 ¿En qué te ayudo?
               </div>
             </div>
