@@ -1,8 +1,8 @@
-const pool = require('../config/db');
+const Cliente = require('../models/cliente.model');
+const Venta = require('../models/venta.model');
 
 const TIPOS = ['persona_natural', 'empresa'];
 const TIPOS_DOCUMENTO = ['CC', 'CE', 'NIT', 'PASAPORTE'];
-const DOCUMENTO_GENERICO = '222222222222'; // Consumidor Final
 const REGEX_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function normalizar(d) {
@@ -37,44 +37,23 @@ function validar(c) {
   return errores;
 }
 
-const COLUMNAS = `id_cliente, tipo, tipo_documento, nombre_razon_social, documento,
-                  telefono, correo, direccion, activo`;
-
 // GET /api/clientes?buscar=&tipo=&activo=true|false&pagina=1&limite=10
 async function listar(req, res) {
   try {
     const { buscar, tipo, activo } = req.query;
     const limite = Math.min(parseInt(req.query.limite) || 10, 100);
     const pagina = Math.max(parseInt(req.query.pagina) || 1, 1);
-    const offset = (pagina - 1) * limite;
 
-    // "Consumidor Final" no se gestiona desde la lista
-    const condiciones = ['documento <> ?'];
-    const params = [DOCUMENTO_GENERICO];
-
-    if (buscar) {
-      condiciones.push('(nombre_razon_social LIKE ? OR documento LIKE ?)');
-      params.push(`%${buscar}%`, `%${buscar}%`);
-    }
-    if (TIPOS.includes(tipo)) {
-      condiciones.push('tipo = ?');
-      params.push(tipo);
-    }
-    if (activo === 'true' || activo === 'false') {
-      condiciones.push('activo = ?');
-      params.push(activo === 'true');
-    }
-
-    const where = `WHERE ${condiciones.join(' AND ')}`;
-
-    const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM cliente ${where}`, params);
-    const [filas] = await pool.query(
-      `SELECT ${COLUMNAS} FROM cliente ${where} ORDER BY nombre_razon_social LIMIT ? OFFSET ?`,
-      [...params, limite, offset]
-    );
+    const { datos, total } = await Cliente.listar({
+      buscar,
+      tipo: TIPOS.includes(tipo) ? tipo : null,
+      activo,
+      limite,
+      offset: (pagina - 1) * limite,
+    });
 
     res.json({
-      datos: filas.map((f) => ({ ...f, activo: Boolean(f.activo) })),
+      datos: datos.map((f) => ({ ...f, activo: Boolean(f.activo) })),
       total,
       pagina,
       limite,
@@ -88,33 +67,18 @@ async function listar(req, res) {
 // GET /api/clientes/:id  (el administrador además recibe el historial de compras)
 async function obtener(req, res) {
   try {
-    const [filas] = await pool.query(`SELECT ${COLUMNAS} FROM cliente WHERE id_cliente = ?`, [req.params.id]);
-    if (filas.length === 0) {
+    const fila = await Cliente.obtener(req.params.id);
+    if (!fila) {
       return res.status(404).json({ mensaje: 'Cliente no encontrado' });
     }
 
-    const cliente = { ...filas[0], activo: Boolean(filas[0].activo) };
+    const cliente = { ...fila, activo: Boolean(fila.activo) };
 
     if (req.usuario.rol === 'Administrador') {
-      const [[resumen]] = await pool.query(
-        `SELECT COUNT(*) AS num_compras, COALESCE(SUM(total), 0) AS total_comprado
-         FROM venta
-         WHERE id_cliente = ? AND estado = 'activa'`,
-        [cliente.id_cliente]
-      );
-      const [compras] = await pool.query(
-        `SELECT id_venta, numero,
-                CONCAT('TK-', YEAR(fecha_hora), '-', LPAD(numero, 5, '0')) AS ticket,
-                fecha_hora, medio_pago, total, estado
-         FROM venta
-         WHERE id_cliente = ?
-         ORDER BY fecha_hora DESC, id_venta DESC
-         LIMIT 10`,
-        [cliente.id_cliente]
-      );
+      const resumen = await Venta.resumenDeCliente(cliente.id_cliente);
       cliente.num_compras = resumen.num_compras;
       cliente.total_comprado = resumen.total_comprado;
-      cliente.compras = compras;
+      cliente.compras = await Venta.ultimasDeCliente(cliente.id_cliente, 10);
     }
 
     res.json(cliente);
@@ -132,12 +96,8 @@ async function crear(req, res) {
   }
 
   try {
-    const [resultado] = await pool.query(
-      `INSERT INTO cliente (tipo, tipo_documento, nombre_razon_social, documento, telefono, correo, direccion)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [c.tipo, c.tipo_documento, c.nombre_razon_social, c.documento, c.telefono, c.correo, c.direccion]
-    );
-    res.status(201).json({ id_cliente: resultado.insertId, mensaje: 'Cliente creado' });
+    const id = await Cliente.crear(c);
+    res.status(201).json({ id_cliente: id, mensaje: 'Cliente creado' });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ mensaje: 'Ya existe un cliente con ese documento' });
@@ -155,21 +115,15 @@ async function actualizar(req, res) {
   }
 
   try {
-    const [actual] = await pool.query('SELECT documento FROM cliente WHERE id_cliente = ?', [req.params.id]);
-    if (actual.length === 0) {
+    const documentoActual = await Cliente.documentoDe(req.params.id);
+    if (documentoActual === undefined) {
       return res.status(404).json({ mensaje: 'Cliente no encontrado' });
     }
-    if (actual[0].documento === DOCUMENTO_GENERICO) {
+    if (documentoActual === Cliente.DOCUMENTO_GENERICO) {
       return res.status(409).json({ mensaje: 'El cliente "Consumidor Final" no se puede modificar' });
     }
 
-    await pool.query(
-      `UPDATE cliente
-       SET tipo = ?, tipo_documento = ?, nombre_razon_social = ?, documento = ?,
-           telefono = ?, correo = ?, direccion = ?
-       WHERE id_cliente = ?`,
-      [c.tipo, c.tipo_documento, c.nombre_razon_social, c.documento, c.telefono, c.correo, c.direccion, req.params.id]
-    );
+    await Cliente.actualizar(req.params.id, c);
     res.json({ mensaje: 'Cliente actualizado' });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
@@ -187,15 +141,15 @@ async function cambiarEstado(req, res) {
   }
 
   try {
-    const [actual] = await pool.query('SELECT documento FROM cliente WHERE id_cliente = ?', [req.params.id]);
-    if (actual.length === 0) {
+    const documentoActual = await Cliente.documentoDe(req.params.id);
+    if (documentoActual === undefined) {
       return res.status(404).json({ mensaje: 'Cliente no encontrado' });
     }
-    if (actual[0].documento === DOCUMENTO_GENERICO) {
+    if (documentoActual === Cliente.DOCUMENTO_GENERICO) {
       return res.status(409).json({ mensaje: 'El cliente "Consumidor Final" no se puede desactivar' });
     }
 
-    await pool.query('UPDATE cliente SET activo = ? WHERE id_cliente = ?', [req.body.activo, req.params.id]);
+    await Cliente.cambiarEstado(req.params.id, req.body.activo);
     res.json({ mensaje: req.body.activo ? 'Cliente activado' : 'Cliente desactivado' });
   } catch (error) {
     console.error(error);

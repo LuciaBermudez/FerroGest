@@ -1,6 +1,6 @@
-const pool = require('../config/db');
+const Producto = require('../models/producto.model');
 const { ErrorNegocio } = require('./inventario.service');
-const { PERIODOS, resumenPeriodo } = require('./reportes.service');
+const { PERIODOS, resumenPeriodo } = require('../models/reporte.model');
 
 // El SDK puede exportar la clase de distintas formas según cómo se cargue
 const OpenAIModulo = require('openai');
@@ -90,17 +90,7 @@ async function buscarProductos({ texto }) {
   const t = typeof texto === 'string' ? texto.trim().slice(0, 100) : '';
   if (!t) throw new Error('Falta el texto de búsqueda');
 
-  const patron = `%${t}%`;
-  const [filas] = await pool.query(
-    `SELECT p.codigo, p.nombre, p.descripcion, c.nombre AS categoria, p.unidad_medida,
-            p.existencias, p.stock_minimo, p.precio_venta, p.porcentaje_iva, p.activo
-     FROM producto p
-     JOIN categoria c ON c.id_categoria = p.id_categoria
-     WHERE p.codigo LIKE ? OR p.nombre LIKE ? OR p.descripcion LIKE ?
-     ORDER BY p.activo DESC, p.nombre
-     LIMIT 5`,
-    [patron, patron, patron]
-  );
+  const filas = await Producto.buscarPorTexto(t, 5);
 
   // Nunca se devuelve precio_compra
   return {
@@ -122,16 +112,7 @@ async function buscarProductos({ texto }) {
 }
 
 async function productosStockBajo(entrada) {
-  const where = entrada?.solo_agotados === true ? "WHERE nivel = 'agotado'" : '';
-
-  const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM v_productos_stock_bajo ${where}`);
-  const [filas] = await pool.query(
-    `SELECT codigo, nombre, categoria, existencias, stock_minimo, nivel
-     FROM v_productos_stock_bajo ${where}
-     ORDER BY existencias ASC
-     LIMIT 15`
-  );
-  return { total, mostrados: filas.length, productos: filas };
+  return Producto.stockBajo({ soloAgotados: entrada?.solo_agotados === true, limite: 15 });
 }
 
 async function resumenVentas(entrada) {

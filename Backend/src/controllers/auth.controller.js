@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const pool = require('../config/db');
+const Usuario = require('../models/usuario.model');
 
 async function login(req, res) {
   const { correo, contrasena } = req.body;
@@ -10,16 +10,10 @@ async function login(req, res) {
   }
 
   try {
-    const [filas] = await pool.query(
-      `SELECT u.id_usuario, u.nombre_completo, u.correo, u.contrasena_hash, u.activo, r.nombre AS rol
-       FROM usuario u
-       JOIN rol r ON r.id_rol = u.id_rol
-       WHERE u.correo = ?`,
-      [correo]
-    );
-    const usuario = filas[0];
+    const usuario = await Usuario.buscarPorCorreo(correo);
 
-
+    // Mismo mensaje si el usuario no existe, está inactivo o la contraseña falla:
+    // así no se revela qué correos están registrados
     const valido =
       usuario && usuario.activo && (await bcrypt.compare(contrasena, usuario.contrasena_hash));
 
@@ -50,19 +44,13 @@ async function login(req, res) {
 
 async function perfil(req, res) {
   try {
-    const [filas] = await pool.query(
-      `SELECT u.id_usuario AS id, u.nombre_completo AS nombre, u.correo, r.nombre AS rol
-       FROM usuario u
-       JOIN rol r ON r.id_rol = u.id_rol
-       WHERE u.id_usuario = ? AND u.activo = TRUE`,
-      [req.usuario.id]
-    );
+    const usuario = await Usuario.buscarActivoPorId(req.usuario.id);
 
-    if (filas.length === 0) {
+    if (!usuario) {
       return res.status(401).json({ mensaje: 'Usuario no disponible' });
     }
 
-    res.json(filas[0]);
+    res.json(usuario);
   } catch (error) {
     console.error(error);
     res.status(500).json({ mensaje: 'Error del servidor' });
