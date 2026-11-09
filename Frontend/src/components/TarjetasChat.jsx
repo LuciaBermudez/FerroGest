@@ -1,14 +1,8 @@
 import { formatoCantidad, formatoNumero, formatoPesos } from '../utils/formato';
+import { nivelStock } from '../utils/stock';
 
 const PERIODOS = { hoy: 'Hoy', semana: 'Esta semana', mes: 'Este mes' };
 
-// Agotado: 0. Crítico: la mitad del mínimo o menos. Alerta: bajo el mínimo
-function nivelStock(existencias, minimo) {
-  if (existencias <= 0) return { texto: 'Agotado', clase: 'agotado' };
-  if (existencias <= minimo / 2) return { texto: 'Crítico', clase: 'critico' };
-  if (existencias <= minimo) return { texto: 'Alerta', clase: 'alerta' };
-  return { texto: 'Normal', clase: 'normal' };
-}
 
 function StockBajo({ datos }) {
   if (datos.productos.length === 0) return null;

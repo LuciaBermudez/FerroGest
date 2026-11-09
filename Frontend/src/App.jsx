@@ -26,8 +26,8 @@ export default function App() {
 
       <Route element={<RutaProtegida />}>
         <Route element={<Layout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route element={<RutaProtegida roles={[ROLES.ADMIN]} />}>
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/usuarios" element={<Usuarios />} />
           </Route>
 

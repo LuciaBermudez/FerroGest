@@ -9,8 +9,8 @@ export const ROLES = {
 // Pantalla a la que llega cada rol después de iniciar sesión
 const INICIO = {
   [ROLES.ADMIN]: '/dashboard',
-  [ROLES.VENDEDOR]: '/ventas',
-  [ROLES.ENCARGADO]: '/inventario',
+  [ROLES.VENDEDOR]: '/dashboard',
+  [ROLES.ENCARGADO]: '/dashboard',
 };
 export const rutaInicial = (rol) => INICIO[rol] ?? '/login';
 
@@ -19,7 +19,7 @@ export const MENU = [
   {
     seccion: 'Operaciones',
     items: [
-      { ruta: '/dashboard', texto: 'Dashboard', icono: LayoutDashboard, roles: [ROLES.ADMIN] },
+      { ruta: '/dashboard', texto: 'Dashboard', icono: LayoutDashboard, roles: [ROLES.ADMIN, ROLES.VENDEDOR, ROLES.ENCARGADO]},
       { ruta: '/ventas', texto: 'Ventas', icono: ShoppingCart, roles: [ROLES.ADMIN, ROLES.VENDEDOR] },
       { ruta: '/inventario', texto: 'Inventario', icono: Warehouse, roles: [ROLES.ADMIN, ROLES.ENCARGADO] },
       { ruta: '/clientes', texto: 'Clientes', icono: Users, roles: [ROLES.ADMIN, ROLES.VENDEDOR] },

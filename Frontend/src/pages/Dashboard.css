@@ -88,3 +88,34 @@
   .top-fila { grid-template-columns: 1fr auto; }
   .top-sku, .top-unidades { display: none; }
 }
+.tarjeta-nota { display: block; margin-top: 6px; font-size: 12px; color: var(--texto-suave); }
+.tarjeta-fila .tarjeta-valor.rojo { color: var(--rojo); }
+.tarjeta-fila .tarjeta-valor.ambar { color: #c2410c; }
+.icono-grande.rojo { background: var(--rojo-claro); color: var(--rojo); }
+.icono-grande.ambar { background: #ffedd5; color: #c2410c; }
+
+.dash-lista { margin-bottom: 16px; padding: 24px; }
+.dash-tabla-envoltorio { overflow-x: auto; }
+.dash-tabla { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px; }
+.dash-tabla th {
+  padding: 10px 12px; background: #f1f5fb; text-align: left; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; color: #334155;
+}
+.dash-tabla td { padding: 10px 12px; border-bottom: 1px solid var(--borde); vertical-align: middle; }
+.dash-tabla .der { text-align: right; }
+.dash-prod { font-weight: 600; }
+.dash-sku { font-size: 11px; color: var(--texto-suave); }
+.dash-tabla .positivo { color: #166534; font-weight: 700; }
+.dash-tabla .negativo { color: var(--rojo); font-weight: 700; }
+
+.dash-nivel { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.dash-nivel.agotado { background: #7f1d1d; color: #fff; }
+.dash-nivel.critico { background: var(--rojo-claro); color: var(--rojo); }
+.dash-nivel.alerta { background: #fed7aa; color: #9a3412; }
+.dash-nivel.normal { background: #dcfce7; color: #166534; }
+
+.dash-tipo { display: inline-block; padding: 2px 8px; border-radius: 4px; background: var(--azul-claro); color: var(--azul-principal); font-size: 11px; font-weight: 700; }
+.dash-tipo.entrada { background: #dcfce7; color: #166534; }
+.dash-tipo.anulacion { background: #fef3c7; color: #92400e; }
+.dash-tipo.ajuste { background: #ede9fe; color: #5b21b6; }
+
