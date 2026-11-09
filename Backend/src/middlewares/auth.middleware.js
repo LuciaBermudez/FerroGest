@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const pool = require('../config/db');
+const Usuario = require('../models/usuario.model');
 
 // Exige un token válido y un usuario que siga activo en la base de datos
 async function verificarToken(req, res, next) {
@@ -19,19 +19,13 @@ async function verificarToken(req, res, next) {
 
   try {
     // Se consulta en cada petición: si desactivan al usuario o le cambian el rol, aplica de inmediato
-    const [filas] = await pool.query(
-      `SELECT u.id_usuario, u.activo, r.nombre AS rol
-       FROM usuario u
-       JOIN rol r ON r.id_rol = u.id_rol
-       WHERE u.id_usuario = ?`,
-      [payload.id]
-    );
+    const usuario = await Usuario.buscarParaToken(payload.id);
 
-    if (filas.length === 0 || !filas[0].activo) {
+    if (!usuario || !usuario.activo) {
       return res.status(401).json({ mensaje: 'Usuario no disponible' });
     }
 
-    req.usuario = { id: filas[0].id_usuario, rol: filas[0].rol };
+    req.usuario = { id: usuario.id_usuario, rol: usuario.rol };
     next();
   } catch (error) {
     console.error(error);

@@ -1,4 +1,4 @@
-const reportes = require('../services/reportes.service');
+const reportes = require('../models/reporte.model');
 
 const ROLES = {
   ADMIN: 'Administrador',

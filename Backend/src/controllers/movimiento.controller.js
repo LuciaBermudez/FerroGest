@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+const Movimiento = require('../models/movimiento.model');
 const { ErrorNegocio, enTransaccion, registrarMovimiento } = require('../services/inventario.service');
 
 const TIPOS = ['entrada', 'venta', 'anulacion', 'ajuste'];
@@ -76,51 +76,15 @@ async function listar(req, res) {
     const { producto, tipo, desde, hasta } = req.query;
     const limite = Math.min(parseInt(req.query.limite) || 20, 100);
     const pagina = Math.max(parseInt(req.query.pagina) || 1, 1);
-    const offset = (pagina - 1) * limite;
 
-    const condiciones = [];
-    const params = [];
-
-    if (producto) {
-      condiciones.push('m.id_producto = ?');
-      params.push(producto);
-    }
-    if (tipo) {
-      if (!TIPOS.includes(tipo)) {
-        return res.status(400).json({ mensaje: `El tipo debe ser uno de: ${TIPOS.join(', ')}` });
-      }
-      condiciones.push('m.tipo = ?');
-      params.push(tipo);
-    }
-    if (desde) {
-      condiciones.push('m.fecha_hora >= ?');
-      params.push(desde);
-    }
-    if (hasta) {
-      condiciones.push('m.fecha_hora < DATE_ADD(?, INTERVAL 1 DAY)');
-      params.push(hasta);
+    if (tipo && !TIPOS.includes(tipo)) {
+      return res.status(400).json({ mensaje: `El tipo debe ser uno de: ${TIPOS.join(', ')}` });
     }
 
-    const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
-
-    const [[{ total }]] = await pool.query(
-      `SELECT COUNT(*) AS total FROM movimiento_inventario m ${where}`,
-      params
-    );
-    const [filas] = await pool.query(
-      `SELECT m.id_movimiento, m.fecha_hora, m.tipo, m.cantidad, m.existencias_resultantes,
-              m.nota, m.id_venta, p.id_producto, p.codigo, p.nombre AS producto,
-              u.nombre_completo AS usuario
-       FROM movimiento_inventario m
-       JOIN producto p ON p.id_producto = m.id_producto
-       JOIN usuario u ON u.id_usuario = m.id_usuario
-       ${where}
-       ORDER BY m.fecha_hora DESC, m.id_movimiento DESC
-       LIMIT ? OFFSET ?`,
-      [...params, limite, offset]
-    );
-
-    res.json({ datos: filas, total, pagina, limite });
+    const { datos, total } = await Movimiento.listar({
+      producto, tipo, desde, hasta, limite, offset: (pagina - 1) * limite,
+    });
+    res.json({ datos, total, pagina, limite });
   } catch (error) {
     console.error(error);
     res.status(500).json({ mensaje: 'Error del servidor' });

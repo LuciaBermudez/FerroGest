@@ -1,4 +1,6 @@
 const pool = require('../config/db');
+const Producto = require('../models/producto.model');
+const Movimiento = require('../models/movimiento.model');
 
 // Error con código HTTP para reglas de negocio (stock insuficiente, producto inexistente...)
 class ErrorNegocio extends Error {
@@ -8,7 +10,7 @@ class ErrorNegocio extends Error {
   }
 }
 
-// Ejecuta un bloque dentro de una transacción: si algo falla, se deshace todo
+// Solo administra la transacción (abrir, confirmar o deshacer): si algo falla, se deshace todo
 async function enTransaccion(callback) {
   const conexion = await pool.getConnection();
   try {
@@ -33,16 +35,12 @@ async function registrarMovimiento(
   conexion,
   { idProducto, idUsuario, tipo, cantidad, idVenta = null, nota = null }
 ) {
-  // FOR UPDATE bloquea la fila hasta que termine la transacción
-  const [filas] = await conexion.query(
-    'SELECT existencias FROM producto WHERE id_producto = ? FOR UPDATE',
-    [idProducto]
-  );
-  if (filas.length === 0) {
+  const existencias = await Producto.bloquearExistencias(conexion, idProducto);
+  if (existencias === null) {
     throw new ErrorNegocio('Producto no encontrado', 404);
   }
 
-  const actuales = Number(filas[0].existencias);
+  const actuales = Number(existencias);
   const nuevas = redondear(actuales + Number(cantidad));
 
   if (nuevas < 0) {
@@ -52,19 +50,13 @@ async function registrarMovimiento(
     );
   }
 
-  await conexion.query('UPDATE producto SET existencias = ? WHERE id_producto = ?', [
-    nuevas,
-    idProducto,
-  ]);
+  await Producto.actualizarExistencias(conexion, idProducto, nuevas);
 
-  const [resultado] = await conexion.query(
-    `INSERT INTO movimiento_inventario
-      (id_producto, id_usuario, id_venta, tipo, cantidad, existencias_resultantes, nota)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [idProducto, idUsuario, idVenta, tipo, cantidad, nuevas, nota]
-  );
+  const idMovimiento = await Movimiento.insertar(conexion, {
+    idProducto, idUsuario, idVenta, tipo, cantidad, existenciasResultantes: nuevas, nota,
+  });
 
-  return { id_movimiento: resultado.insertId, existencias_resultantes: nuevas };
+  return { id_movimiento: idMovimiento, existencias_resultantes: nuevas };
 }
 
 module.exports = { ErrorNegocio, enTransaccion, registrarMovimiento };

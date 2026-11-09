@@ -1,11 +1,6 @@
-const pool = require('../config/db');
-
-const SELECT_PRODUCTO = `
-  SELECT p.id_producto, p.codigo, p.nombre, p.descripcion, p.unidad_medida,
-         p.precio_compra, p.precio_venta, p.porcentaje_iva, p.stock_minimo,
-         p.existencias, p.activo, p.id_categoria, c.nombre AS categoria
-  FROM producto p
-  JOIN categoria c ON c.id_categoria = p.id_categoria`;
+const Producto = require('../models/producto.model');
+const Movimiento = require('../models/movimiento.model');
+const { enTransaccion } = require('../services/inventario.service');
 
 // Ajusta lo que se devuelve según el rol: el costo de compra es solo del administrador
 function prepararProducto(producto, rol) {
@@ -21,6 +16,9 @@ function validar(d) {
   if (!d.unidad_medida?.trim()) errores.push('La unidad de medida es obligatoria');
   if (!d.id_categoria) errores.push('La categoría es obligatoria');
   if (!(Number(d.precio_venta) >= 0)) errores.push('El precio de venta debe ser un número mayor o igual a 0');
+  if (d.precio_compra !== undefined && !(Number(d.precio_compra) >= 0)) {
+    errores.push('El precio de compra debe ser un número mayor o igual a 0');
+  }
   const iva = Number(d.porcentaje_iva);
   if (d.porcentaje_iva === undefined || !(iva >= 0 && iva <= 100)) {
     errores.push('El IVA debe estar entre 0 y 100');
@@ -32,8 +30,33 @@ function validar(d) {
   if (d.nombre && d.nombre.trim().length > 100) errores.push('El nombre no puede superar los 100 caracteres');
   if (d.descripcion && d.descripcion.trim().length > 255) errores.push('La descripción no puede superar los 255 caracteres');
   if (d.unidad_medida && d.unidad_medida.trim().length > 20) errores.push('La unidad de medida no puede superar los 20 caracteres');
-  
   return errores;
+}
+
+// Datos del cuerpo de la petición con el formato que esperan los modelos
+function aDatosModelo(d, precioCompra) {
+  return {
+    idCategoria: d.id_categoria,
+    codigo: d.codigo.trim(),
+    nombre: d.nombre.trim(),
+    descripcion: d.descripcion?.trim() || null,
+    unidadMedida: d.unidad_medida.trim(),
+    precioCompra,
+    precioVenta: Number(d.precio_venta),
+    porcentajeIva: Number(d.porcentaje_iva),
+    stockMinimo: Number(d.stock_minimo) || 0,
+  };
+}
+
+function errorDeBD(error, res) {
+  if (error.code === 'ER_DUP_ENTRY') {
+    return res.status(409).json({ mensaje: 'Ya existe un producto con ese código' });
+  }
+  if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+    return res.status(400).json({ mensaje: 'La categoría indicada no existe' });
+  }
+  console.error(error);
+  res.status(500).json({ mensaje: 'Error del servidor' });
 }
 
 // GET /api/productos?buscar=&categoria=&estado=normal|bajo&activo=true|false&pagina=1&limite=10
@@ -42,36 +65,13 @@ async function listar(req, res) {
     const { buscar, categoria, estado, activo } = req.query;
     const limite = Math.min(parseInt(req.query.limite) || 10, 100);
     const pagina = Math.max(parseInt(req.query.pagina) || 1, 1);
-    const offset = (pagina - 1) * limite;
 
-    const condiciones = [];
-    const params = [];
-
-    if (buscar) {
-      condiciones.push('(p.codigo LIKE ? OR p.nombre LIKE ?)');
-      params.push(`%${buscar}%`, `%${buscar}%`);
-    }
-    if (categoria) {
-      condiciones.push('p.id_categoria = ?');
-      params.push(categoria);
-    }
-    if (estado === 'bajo') condiciones.push('p.existencias <= p.stock_minimo');
-    if (estado === 'normal') condiciones.push('p.existencias > p.stock_minimo');
-    if (activo === 'true' || activo === 'false') {
-      condiciones.push('p.activo = ?');
-      params.push(activo === 'true');
-    }
-
-    const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
-
-    const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM producto p ${where}`, params);
-    const [filas] = await pool.query(
-      `${SELECT_PRODUCTO} ${where} ORDER BY p.nombre LIMIT ? OFFSET ?`,
-      [...params, limite, offset]
-    );
+    const { datos, total } = await Producto.listar({
+      buscar, categoria, estado, activo, limite, offset: (pagina - 1) * limite,
+    });
 
     res.json({
-      datos: filas.map((f) => prepararProducto(f, req.usuario.rol)),
+      datos: datos.map((f) => prepararProducto(f, req.usuario.rol)),
       total,
       pagina,
       limite,
@@ -84,11 +84,11 @@ async function listar(req, res) {
 
 async function obtener(req, res) {
   try {
-    const [filas] = await pool.query(`${SELECT_PRODUCTO} WHERE p.id_producto = ?`, [req.params.id]);
-    if (filas.length === 0) {
+    const producto = await Producto.obtener(req.params.id);
+    if (!producto) {
       return res.status(404).json({ mensaje: 'Producto no encontrado' });
     }
-    res.json(prepararProducto(filas[0], req.usuario.rol));
+    res.json(prepararProducto(producto, req.usuario.rol));
   } catch (error) {
     console.error(error);
     res.status(500).json({ mensaje: 'Error del servidor' });
@@ -108,46 +108,27 @@ async function crear(req, res) {
     return res.status(400).json({ mensaje: 'Datos inválidos', errores: ['El stock inicial no puede ser negativo'] });
   }
 
-  const conexion = await pool.getConnection();
   try {
-    await conexion.beginTransaction();
+    const idProducto = await enTransaccion(async (conexion) => {
+      const id = await Producto.crear(conexion, { ...aDatosModelo(d, precioCompra), existencias: stockInicial });
 
-    const [resultado] = await conexion.query(
-      `INSERT INTO producto
-        (id_categoria, codigo, nombre, descripcion, unidad_medida,
-         precio_compra, precio_venta, porcentaje_iva, stock_minimo, existencias)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        d.id_categoria, d.codigo.trim(), d.nombre.trim(), d.descripcion?.trim() || null,
-        d.unidad_medida.trim(), precioCompra, Number(d.precio_venta), Number(d.porcentaje_iva),
-        Number(d.stock_minimo) || 0, stockInicial,
-      ]
-    );
+      // El stock inicial queda registrado en el kárdex
+      if (stockInicial > 0) {
+        await Movimiento.insertar(conexion, {
+          idProducto: id,
+          idUsuario: req.usuario.id,
+          tipo: 'entrada',
+          cantidad: stockInicial,
+          existenciasResultantes: stockInicial,
+          nota: 'Inventario inicial',
+        });
+      }
+      return id;
+    });
 
-    // El stock inicial queda registrado en el kárdex
-    if (stockInicial > 0) {
-      await conexion.query(
-        `INSERT INTO movimiento_inventario
-          (id_producto, id_usuario, tipo, cantidad, existencias_resultantes, nota)
-         VALUES (?, ?, 'entrada', ?, ?, 'Inventario inicial')`,
-        [resultado.insertId, req.usuario.id, stockInicial, stockInicial]
-      );
-    }
-
-    await conexion.commit();
-    res.status(201).json({ id_producto: resultado.insertId, mensaje: 'Producto creado' });
+    res.status(201).json({ id_producto: idProducto, mensaje: 'Producto creado' });
   } catch (error) {
-    await conexion.rollback();
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ mensaje: 'Ya existe un producto con ese código' });
-    }
-    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-      return res.status(400).json({ mensaje: 'La categoría indicada no existe' });
-    }
-    console.error(error);
-    res.status(500).json({ mensaje: 'Error del servidor' });
-  } finally {
-    conexion.release();
+    errorDeBD(error, res);
   }
 }
 
@@ -159,39 +140,22 @@ async function actualizar(req, res) {
     return res.status(400).json({ mensaje: 'Datos inválidos', errores });
   }
 
-  const sets = [
-    'codigo = ?', 'nombre = ?', 'descripcion = ?', 'unidad_medida = ?',
-    'id_categoria = ?', 'precio_venta = ?', 'porcentaje_iva = ?', 'stock_minimo = ?',
-  ];
-  const valores = [
-    d.codigo.trim(), d.nombre.trim(), d.descripcion?.trim() || null, d.unidad_medida.trim(),
-    d.id_categoria, Number(d.precio_venta), Number(d.porcentaje_iva), Number(d.stock_minimo) || 0,
-  ];
-
   // Solo el administrador puede cambiar el costo de compra
-  if (req.usuario.rol === 'Administrador' && d.precio_compra !== undefined) {
-    sets.push('precio_compra = ?');
-    valores.push(Number(d.precio_compra) || 0);
-  }
+  const esAdmin = req.usuario.rol === 'Administrador';
+  const incluirCompra = esAdmin && d.precio_compra !== undefined;
 
   try {
-    const [resultado] = await pool.query(
-      `UPDATE producto SET ${sets.join(', ')} WHERE id_producto = ?`,
-      [...valores, req.params.id]
+    const filas = await Producto.actualizar(
+      req.params.id,
+      aDatosModelo(d, Number(d.precio_compra) || 0),
+      { incluirCompra }
     );
-    if (resultado.affectedRows === 0) {
+    if (filas === 0) {
       return res.status(404).json({ mensaje: 'Producto no encontrado' });
     }
     res.json({ mensaje: 'Producto actualizado' });
   } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(409).json({ mensaje: 'Ya existe un producto con ese código' });
-    }
-    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-      return res.status(400).json({ mensaje: 'La categoría indicada no existe' });
-    }
-    console.error(error);
-    res.status(500).json({ mensaje: 'Error del servidor' });
+    errorDeBD(error, res);
   }
 }
 
@@ -202,11 +166,8 @@ async function cambiarEstado(req, res) {
   }
 
   try {
-    const [resultado] = await pool.query(
-      'UPDATE producto SET activo = ? WHERE id_producto = ?',
-      [req.body.activo, req.params.id]
-    );
-    if (resultado.affectedRows === 0) {
+    const filas = await Producto.cambiarEstado(req.params.id, req.body.activo);
+    if (filas === 0) {
       return res.status(404).json({ mensaje: 'Producto no encontrado' });
     }
     res.json({ mensaje: req.body.activo ? 'Producto activado' : 'Producto desactivado' });

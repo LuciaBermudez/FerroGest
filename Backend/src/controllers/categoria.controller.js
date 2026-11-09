@@ -1,9 +1,8 @@
-const pool = require('../config/db');
+const Categoria = require('../models/categoria.model');
 
 async function listar(req, res) {
   try {
-    const [filas] = await pool.query('SELECT id_categoria, nombre FROM categoria ORDER BY nombre');
-    res.json(filas);
+    res.json(await Categoria.listar());
   } catch (error) {
     console.error(error);
     res.status(500).json({ mensaje: 'Error del servidor' });
@@ -17,8 +16,8 @@ async function crear(req, res) {
   }
 
   try {
-    const [resultado] = await pool.query('INSERT INTO categoria (nombre) VALUES (?)', [nombre]);
-    res.status(201).json({ id_categoria: resultado.insertId, nombre });
+    const id = await Categoria.crear(nombre);
+    res.status(201).json({ id_categoria: id, nombre });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ mensaje: 'Ya existe una categoría con ese nombre' });
