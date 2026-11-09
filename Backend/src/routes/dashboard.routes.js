@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const ctrl = require('../controllers/dashboard.controller');
-const { verificarToken, permitirRoles } = require('../middlewares/auth.middleware');
+const { verificarToken } = require('../middlewares/auth.middleware');
 
-router.get('/', verificarToken, permitirRoles('Administrador'), ctrl.obtener);
+router.get('/', verificarToken, ctrl.obtener);
 
 module.exports = router;
