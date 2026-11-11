@@ -5,6 +5,7 @@ const app = express();
 
 const pool = require("./config/db.js");
 
+app.use(cors());
 app.use(express.json());
 
 app.get('/api/health', async (req, res) => {
