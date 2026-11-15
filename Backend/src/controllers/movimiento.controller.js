@@ -17,8 +17,10 @@ async function entrada(req, res) {
   const cantidad = Number(req.body.cantidad);
 
   const errores = [];
-  if (!id_producto) errores.push('El producto es obligatorio');
-  if (!(cantidad > 0)) errores.push('La cantidad debe ser mayor a 0');
+  if (!Number.isInteger(Number(id_producto)) || Number(id_producto) <= 0) {
+    errores.push('El producto es obligatorio');
+  }
+  if (!Number.isFinite(cantidad) || !(cantidad > 0)) errores.push('La cantidad debe ser mayor a 0');
   if (nota && nota.length > 200) errores.push('La nota no puede superar los 200 caracteres');
   if (errores.length > 0) {
     return res.status(400).json({ mensaje: 'Datos inválidos', errores });
@@ -46,8 +48,12 @@ async function ajuste(req, res) {
   const cantidad = Number(req.body.cantidad);
 
   const errores = [];
-  if (!id_producto) errores.push('El producto es obligatorio');
-  if (!cantidad) errores.push('La cantidad debe ser un número distinto de 0');
+  if (!Number.isInteger(Number(id_producto)) || Number(id_producto) <= 0) {
+    errores.push('El producto es obligatorio');
+  }
+  if (!Number.isFinite(cantidad) || cantidad === 0) {
+    errores.push('La cantidad debe ser un número distinto de 0');
+  }
   if (!nota?.trim()) errores.push('La nota es obligatoria en los ajustes');
   if (nota && nota.length > 200) errores.push('La nota no puede superar los 200 caracteres');
   if (errores.length > 0) {

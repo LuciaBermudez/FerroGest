@@ -359,4 +359,4 @@ async function responder(datos) {
   }
 }
 
-module.exports = { responder };
+module.exports = { responder, herramientasPara, ejecutarHerramienta };

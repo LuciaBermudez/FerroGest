@@ -2,12 +2,15 @@ const { bd } = require('./base');
 
 // --- Registro de una venta (dentro de una transacción) ---
 
-// FOR UPDATE evita que dos ventas simultáneas tomen el mismo consecutivo
+// El consecutivo vive en una tabla de una sola fila: el UPDATE deja la fila
+// bloqueada hasta el commit y LAST_INSERT_ID devuelve el valor ya incrementado.
+// Así las ventas simultáneas esperan su turno en vez de chocar entre sí.
 async function siguienteNumero(conexion) {
-  const [[{ siguiente }]] = await bd(conexion).query(
-    'SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM venta FOR UPDATE'
+  await bd(conexion).query(
+    'UPDATE secuencia_ticket SET ultimo = LAST_INSERT_ID(ultimo + 1) WHERE id = 1'
   );
-  return siguiente;
+  const [[{ siguiente }]] = await bd(conexion).query('SELECT LAST_INSERT_ID() AS siguiente');
+  return Number(siguiente);
 }
 
 async function insertar(conexion, v) {

@@ -10,6 +10,7 @@ Backend/node_modules/
 Backend/.env
 Backend/.env.*
 !Backend/.env.example
+!Backend/.env.test.example
 
 # Archivos generados
 dist/

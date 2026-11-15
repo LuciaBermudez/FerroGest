@@ -14,17 +14,35 @@ function validar(d) {
   if (!d.codigo?.trim()) errores.push('El código es obligatorio');
   if (!d.nombre?.trim()) errores.push('El nombre es obligatorio');
   if (!d.unidad_medida?.trim()) errores.push('La unidad de medida es obligatoria');
-  if (!d.id_categoria) errores.push('La categoría es obligatoria');
-  if (!(Number(d.precio_venta) >= 0)) errores.push('El precio de venta debe ser un número mayor o igual a 0');
-  if (d.precio_compra !== undefined && !(Number(d.precio_compra) >= 0)) {
-    errores.push('El precio de compra debe ser un número mayor o igual a 0');
+  const idCategoria = Number(d.id_categoria);
+  if (!Number.isInteger(idCategoria) || idCategoria <= 0) errores.push('La categoría es obligatoria');
+
+  // Number.isFinite descarta NaN e Infinity, que ">=" por sí solo aceptaría
+  const precioVenta = Number(d.precio_venta);
+  if (!Number.isFinite(precioVenta) || precioVenta < 0) {
+    errores.push('El precio de venta debe ser un número mayor o igual a 0');
+  }
+  if (d.precio_compra !== undefined) {
+    const precioCompra = Number(d.precio_compra);
+    if (!Number.isFinite(precioCompra) || precioCompra < 0) {
+      errores.push('El precio de compra debe ser un número mayor o igual a 0');
+    }
   }
   const iva = Number(d.porcentaje_iva);
-  if (d.porcentaje_iva === undefined || !(iva >= 0 && iva <= 100)) {
+  if (d.porcentaje_iva === undefined || !Number.isFinite(iva) || !(iva >= 0 && iva <= 100)) {
     errores.push('El IVA debe estar entre 0 y 100');
   }
-  if (d.stock_minimo !== undefined && !(Number(d.stock_minimo) >= 0)) {
-    errores.push('El stock mínimo debe ser mayor o igual a 0');
+  if (d.stock_minimo !== undefined) {
+    const stockMinimo = Number(d.stock_minimo);
+    if (!Number.isFinite(stockMinimo) || stockMinimo < 0) {
+      errores.push('El stock mínimo debe ser mayor o igual a 0');
+    }
+  }
+  if (d.existencias !== undefined) {
+    const existencias = Number(d.existencias);
+    if (!Number.isFinite(existencias) || existencias < 0) {
+      errores.push('Las existencias deben ser un número mayor o igual a 0');
+    }
   }
   if (d.codigo && d.codigo.trim().length > 30) errores.push('El código no puede superar los 30 caracteres');
   if (d.nombre && d.nombre.trim().length > 100) errores.push('El nombre no puede superar los 100 caracteres');

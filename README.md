@@ -119,11 +119,12 @@ FerroGest/
 │       ├── models/        acceso a datos (usuario, producto, cliente, venta, movimiento, reporte…)
 │       ├── controllers/   lógica de cada módulo
 │       ├── routes/        rutas de la API
-│       ├── middlewares/   autenticación y control de roles
+│       ├── middlewares/   autenticación, control de roles y límite de login
 │       ├── services/      transacciones de inventario y asistente de IA
 │       ├── scripts/       creación del administrador inicial
 │       ├── app.js
 │       └── server.js
+├── Backend/test/          pruebas de integración de la API (node:test)
 ├── Frontend/
 │   └── src/
 │       ├── api/           cliente HTTP
@@ -131,8 +132,10 @@ FerroGest/
 │       ├── context/       sesión del usuario
 │       ├── hooks/         estado del ticket y del chat
 │       ├── pages/         una pantalla por módulo
+│       ├── test/          configuración de Vitest
 │       └── utils/         formatos, roles y cálculos
 ├── Database/              script SQL de la base de datos
+│   └── migrations/        cambios para bases de datos ya existentes
 └── Docs/                  documento de requisitos (IEEE 830) y prototipos
 ```
 
@@ -140,6 +143,7 @@ FerroGest/
 
 Tablas principales: `rol`, `usuario`, `cliente`, `categoria`, `producto`, `venta`, `detalle_venta` y `movimiento_inventario`, además de la vista `v_productos_stock_bajo`.
 
+- `secuencia_ticket` guarda el consecutivo de los tickets en una sola fila; cada venta la bloquea y la incrementa, de modo que dos cajas simultáneas nunca repiten número.
 - Los precios se guardan **sin IVA**; el IVA se calcula por producto.
 - `detalle_venta` conserva el precio y el IVA de cada producto al momento de la venta.
 - `movimiento_inventario` funciona como kárdex: la cantidad lleva signo y se guardan las existencias resultantes.
@@ -155,12 +159,72 @@ Tablas principales: `rol`, `usuario`, `cliente`, `categoria`, `producto`, `venta
 
 ## Seguridad
 
-- Contraseñas almacenadas con hash **bcrypt**.
+- Contraseñas almacenadas con hash **bcrypt**; el login compara siempre un hash (real o ficticio) para no revelar qué correos existen.
 - Autenticación con **JWT**; en cada petición el servidor consulta la base de datos para confirmar que el usuario sigue activo y cuál es su rol actual.
+- **Límite de intentos de login:** 5 fallos por IP y correo en 15 minutos; el contador se limpia al iniciar sesión correctamente.
 - Permisos verificados en el servidor para cada ruta, no solo ocultos en la interfaz.
-- Consultas SQL parametrizadas y validación de todos los datos de entrada.
+- CORS restringido a los orígenes de `CORS_ORIGIN` (no se responde `*`).
+- Cabeceras de seguridad básicas (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`) y `X-Powered-By` desactivado.
+- Cuerpos JSON limitados a 100 kB y errores de la API siempre en JSON (incluido el 404 y el JSON mal formado).
+- Consultas SQL parametrizadas y validación de todos los datos de entrada, incluidos `NaN`, `Infinity` y números negativos.
 - La clave de la API de IA solo existe en el servidor (archivo `.env`, excluido de Git).
 - El asistente de IA solo ejecuta funciones de lectura predefinidas y limitadas por rol.
+
+## Pruebas automatizadas
+
+El proyecto incluye **119 pruebas**: 74 de integración del backend (API + MySQL real) y 45 unitarias y de componentes del frontend.
+
+### Backend (API + MySQL)
+
+Se usa el runner integrado de Node (`node:test`) y `fetch`, sin dependencias adicionales. Las pruebas crean usuarios, productos, clientes y ventas de prueba, y **truncan las tablas antes de cada caso**.
+
+> [!IMPORTANT]
+> Las pruebas solo se ejecutan si `DB_NAME` termina en `_test`. Si el archivo de configuración apunta a `ferrogest`, la suite se detiene antes de tocar nada.
+
+1. Crear la base de pruebas y cargar el esquema:
+
+   ```bash
+   # Linux / macOS
+   sed 's/ferrogest/ferrogest_test/g' Database/schema.sql | mysql -u root -p
+
+   # PowerShell
+   (Get-Content Database/schema.sql -Raw) -replace 'ferrogest','ferrogest_test' |
+     mysql -u root -p
+   ```
+
+   Si la base ya existía antes de esta auditoría, aplica también la migración del consecutivo:
+
+   ```bash
+   mysql -u root -p ferrogest_test < Database/migrations/001_secuencia_ticket.sql
+   ```
+
+2. Copiar `Backend/.env.test.example` como `Backend/.env.test` y ajustar usuario, contraseña y puerto.
+3. Ejecutar:
+
+   ```bash
+   cd Backend
+   npm test
+   ```
+
+### Frontend (Vitest + Testing Library)
+
+Cubren los cálculos del ticket, los formatos, los roles y el menú, el cliente HTTP, el hook del ticket, la protección de rutas y la paginación.
+
+```bash
+cd Frontend
+npm test        # una ejecución
+npm run test:watch
+```
+
+### Migración en una base de datos existente
+
+La tabla `secuencia_ticket` es nueva. Para actualizar una instalación que ya tiene ventas:
+
+```bash
+mysql -u <usuario> -p ferrogest < Database/migrations/001_secuencia_ticket.sql
+```
+
+La migración arranca la secuencia en el último número de ticket emitido, así que no se repiten consecutivos.
 
 ## API REST (resumen)
 

@@ -82,6 +82,15 @@ CREATE INDEX idx_producto_nombre ON producto (nombre);
 
 -- 4. Ventas (facturación simulada)
 
+-- Consecutivo del ticket. Una sola fila: cada venta la bloquea y la incrementa,
+-- así dos cajas simultáneas nunca obtienen el mismo número.
+CREATE TABLE secuencia_ticket (
+  id     TINYINT PRIMARY KEY,
+  ultimo INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
+INSERT INTO secuencia_ticket (id, ultimo) VALUES (1, 0);
+
 CREATE TABLE venta (
   id_venta              INT AUTO_INCREMENT PRIMARY KEY,
   id_cliente            INT NOT NULL,             -- usar "Consumidor Final" si no hay cliente
