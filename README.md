@@ -177,4 +177,3 @@ Todas las rutas cuelgan de `/api` y, salvo el login, requieren el header `Author
 | `/ventas` | `POST /`, `GET /`, `GET /:id`, `POST /:id/anular` | Administrador y vendedor (anular, solo administrador) |
 | `/dashboard` | `GET /?periodo=hoy\|semana\|mes` | Todos, con datos según el rol |
 | `/chat` | `POST /` | Todos, con herramientas según el rol |
-

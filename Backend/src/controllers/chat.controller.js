@@ -61,4 +61,4 @@ async function conversar(req, res) {
   }
 }
 
-module.exports = { conversar };
+module.exports = { conversar, limpiarHistorial };

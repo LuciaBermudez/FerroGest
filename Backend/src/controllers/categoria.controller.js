@@ -14,6 +14,9 @@ async function crear(req, res) {
   if (!nombre) {
     return res.status(400).json({ mensaje: 'El nombre es obligatorio' });
   }
+  if (nombre.length > 50) {
+    return res.status(400).json({ mensaje: 'El nombre no puede superar los 50 caracteres' });
+  }
 
   try {
     const id = await Categoria.crear(nombre);

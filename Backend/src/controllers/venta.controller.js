@@ -27,12 +27,22 @@ function validarVenta(d) {
   }
 
   const descuento = d.porcentaje_descuento === undefined ? 0 : Number(d.porcentaje_descuento);
-  if (!(descuento >= 0 && descuento <= 100)) {
+  if (!Number.isFinite(descuento) || !(descuento >= 0 && descuento <= 100)) {
     errores.push('El descuento debe estar entre 0 y 100');
   }
 
-  if (d.monto_recibido !== undefined && !(Number(d.monto_recibido) >= 0)) {
-    errores.push('El monto recibido debe ser un número válido');
+  if (d.monto_recibido !== undefined) {
+    const monto = Number(d.monto_recibido);
+    if (!Number.isFinite(monto) || monto < 0) {
+      errores.push('El monto recibido debe ser un número válido');
+    }
+  }
+
+  if (d.id_cliente !== undefined && d.id_cliente !== null) {
+    const idCliente = Number(d.id_cliente);
+    if (!Number.isInteger(idCliente) || idCliente <= 0) {
+      errores.push('El cliente indicado no es válido');
+    }
   }
 
   if (!Array.isArray(d.items) || d.items.length === 0) {
@@ -45,7 +55,7 @@ function validarVenta(d) {
   for (const item of d.items) {
     const id = Number(item.id_producto);
     const cantidad = Number(item.cantidad);
-    if (!id || !(cantidad > 0)) {
+    if (!Number.isInteger(id) || id <= 0 || !Number.isFinite(cantidad) || !(cantidad > 0)) {
       errores.push('Cada producto necesita id_producto y una cantidad mayor a 0');
       break;
     }

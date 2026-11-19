@@ -82,6 +82,15 @@ CREATE INDEX idx_producto_nombre ON producto (nombre);
 
 -- 4. Ventas (facturación simulada)
 
+-- Consecutivo del ticket. Una sola fila: cada venta la bloquea y la incrementa,
+-- así dos cajas simultáneas nunca obtienen el mismo número.
+CREATE TABLE secuencia_ticket (
+  id     TINYINT PRIMARY KEY,
+  ultimo INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
+INSERT INTO secuencia_ticket (id, ultimo) VALUES (1, 0);
+
 CREATE TABLE venta (
   id_venta              INT AUTO_INCREMENT PRIMARY KEY,
   id_cliente            INT NOT NULL,             -- usar "Consumidor Final" si no hay cliente
@@ -215,6 +224,18 @@ VALUES
    'SKU-91024', 'Disco Corte Metal 4-1/2"',
    'Grosor 1.0 mm, corte fino y rápido',
    'unid', 2200, 3500, 19.00, 50, 8);
+
+CREATE TABLE IF NOT EXISTS secuencia_ticket (
+  id     TINYINT PRIMARY KEY,
+  ultimo INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
+-- Arranca desde el último número ya emitido para no repetir tickets.
+SET @ultimo_ticket = (SELECT COALESCE(MAX(numero), 0) FROM venta);
+
+INSERT INTO secuencia_ticket (id, ultimo)
+VALUES (1, @ultimo_ticket)
+ON DUPLICATE KEY UPDATE ultimo = GREATEST(ultimo, @ultimo_ticket);
    
 SHOW TABLES;
 SELECT * FROM v_productos_stock_bajo;
